@@ -181,6 +181,17 @@ class PrivateRecipeAPITests(TestCase):
         self.assertEqual(res.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(Recipe.objects.filter(id=recipe.id).exists())
 
+    def test_recipe_other_users_recipe_error(self):
+        """Test trying to delete another users recipe gives error."""
+        new_user = create_user(email='user2@example.com', password='test123')
+        recipe = create_recipe(user=new_user)
+
+        url = detail_url(recipe.id)
+        res = self.client.delete(url)
+
+        self.assertEqual(res.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertTrue(Recipe.objects.filter(id=recipe.id).exists())
+
     def test_create_recipe_with_new_tags(self):
         """Test createing recipe with new tags."""
         payload = {
@@ -206,8 +217,8 @@ class PrivateRecipeAPITests(TestCase):
             self.assertTrue(exits)
 
     def test_create_recipe_with_existing_tags(self):
-        """Test createing recipe with exising tags."""
-        tag_indian = Tag.objects.create(user=self.user, name="Indian")
+        """Test creating a recipe with existing tag."""
+        tag_indian = Tag.objects.create(user=self.user, name='Indian')
 
         payload = {
             'title': 'Dal-bhat',
@@ -215,7 +226,7 @@ class PrivateRecipeAPITests(TestCase):
             'tags': [{'name': 'Indian'}, {'name': 'Lunch'}]
         }
 
-        res = self.client.post(RECIPES_URL, payload, format="json")
+        res = self.client.post(RECIPES_URL, payload, format='json')
 
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
         recipes = Recipe.objects.filter(user=self.user)
@@ -225,9 +236,9 @@ class PrivateRecipeAPITests(TestCase):
         self.assertIn(tag_indian, recipe.tags.all())
 
         for tag in payload['tags']:
-            exits = recipe.tags.filter(
+            exists = recipe.tags.filter(
                 name=tag['name'],
                 user=self.user
             ).exists()
 
-            self.assertTrue(exits)
+            self.assertTrue(exists)
